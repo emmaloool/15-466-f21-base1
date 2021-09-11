@@ -114,7 +114,7 @@ if $(OS) = NT { #Windows
 
 #Store the names of all the .cpp files to build into a variable:
 GAME_NAMES =
-	PlayMode
+	ShrimpMode
 	PPU466
 	main
 	load_save_png

@@ -1,4 +1,4 @@
-#include "PlayMode.hpp"
+#include "ShrimpMode.hpp"
 
 //for the GL_ERRORS() macro:
 #include "gl_errors.hpp"
@@ -8,7 +8,7 @@
 
 #include <random>
 
-PlayMode::PlayMode() {
+ShrimpMode::ShrimpMode() {
 	//TODO:
 	// you *must* use an asset pipeline of some sort to generate tiles.
 	// don't hardcode them like this!
@@ -104,10 +104,10 @@ PlayMode::PlayMode() {
 
 }
 
-PlayMode::~PlayMode() {
+ShrimpMode::~ShrimpMode() {
 }
 
-bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
+bool ShrimpMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 
 	if (evt.type == SDL_KEYDOWN) {
 		if (evt.key.keysym.sym == SDLK_LEFT) {
@@ -146,7 +146,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
-void PlayMode::update(float elapsed) {
+void ShrimpMode::update(float elapsed) {
 
 	//slowly rotates through [0,1):
 	// (will be used to set background color)
@@ -166,7 +166,7 @@ void PlayMode::update(float elapsed) {
 	down.downs = 0;
 }
 
-void PlayMode::draw(glm::uvec2 const &drawable_size) {
+void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 	//--- set ppu state based on game state ---
 
 	//background color will be some hsv-like fade:
