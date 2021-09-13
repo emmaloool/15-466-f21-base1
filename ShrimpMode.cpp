@@ -73,7 +73,7 @@ PPU466::Tile set_tilebits(int32_t tile_row, int32_t tile_col,
 void ShrimpMode::set_sprite_tiles(glm::uvec2 sprite_size, 
                       std::vector< glm::u8vec4 > &sprite_data,
                       PPU466::Palette &sprite_palette,
-                      uint32_t &tile_ind) {
+                      uint8_t &tile_ind) {
     //Sprites should be of size 16x16 pixels => 2x2 tiles
     assert(((sprite_size.x / 8) == sprite_tile_dim) && ((sprite_size.y / 8) == sprite_tile_dim));
 
@@ -134,38 +134,64 @@ ShrimpMode::ShrimpMode() {
     }
 
     // As we make sprites, helps to track which tiles/palettes are occupied
-    uint32_t palette_ind = 4;
-    uint32_t tile_ind = 0;
+    uint8_t palette_ind = 4;
+    uint8_t tile_ind = 0;
 
     // -------------------------- Load PNGs -------------------------- 
     // The following asset pipeline routine to convert a PNG into a sprite
     // (steps include creating a color palette and setting tiles) is loosely 
     // inspired by https://github.com/riyuki15/15-466-f20-base1/blob/master/PlayMode.cpp
 
-    // auto configure_sprite = [this](const char* filename) {
+    auto configure_sprite = [this](const char* filename, 
+                                    SpriteType type, bool consumed,
+                                    uint8_t &palette_ind, uint8_t &tile_ind, uint8_t sprite_ind,
+                                    uint8_t x, uint8_t y) {
+        // Load sprite
+        glm::uvec2 size;
+        std::vector< glm::u8vec4 > data;
+        load_png(filename, &size, &data, LowerLeftOrigin);
 
-    // Load player 
-    glm::uvec2 player_size;
-    std::vector< glm::u8vec4 > player_data;
-    OriginLocation player_origin = LowerLeftOrigin;
-    load_png("images/flamingo.png", &player_size, &player_data, player_origin);
+        // Create metadata tracking sprite
+        sprite_info.emplace_back(SpriteInfo());
+        sprite_info.back().type = type;
+        sprite_info.back().consumed = consumed;
+        sprite_info.back().palette_index = palette_ind;
+        sprite_info.back().start_tile_index = tile_ind;
 
-    // Create metadata tracking sprite
-    sprite_info.emplace_back(SpriteInfo());
-    sprite_info.back().type = Flamingo;
-    sprite_info.back().palette_index = palette_ind;
-    sprite_info.back().start_tile_index = tile_ind;
+        // Get sprite palette
+        ppu.palette_table[palette_ind] = get_palette(size, data);
 
-    std::cout << sprite_info.size() << std::endl;
+        // Set sprite tiles
+        set_sprite_tiles(size, data, ppu.palette_table[palette_ind], tile_ind);
 
-    // Get sprite palette
-    ppu.palette_table[palette_ind] = get_palette(player_size, player_data);
+        // Set sprite position
+        ppu.sprites[sprite_ind].x = x;
+        ppu.sprites[sprite_ind].y = y;
+        
+        // Only one palette is used per sprite for this game
+        palette_ind++;
+    };
+    configure_sprite("images/flamingo.png", Flamingo, false, palette_ind, tile_ind, 0, 0, 0);
 
-    // Set sprite tiles
-    set_sprite_tiles(player_size, player_data, ppu.palette_table[palette_ind], tile_ind);
+    // // Load player 
+    // glm::uvec2 player_size;
+    // std::vector< glm::u8vec4 > player_data;
+    // load_png("images/flamingo.png", &player_size, &player_data, LowerLeftOrigin);
 
-    // Only one palette created for flamingo 
-    palette_ind++;
+    // // Create metadata tracking sprite
+    // sprite_info.emplace_back(SpriteInfo());
+    // sprite_info.back().type = Flamingo;
+    // sprite_info.back().palette_index = palette_ind;
+    // sprite_info.back().start_tile_index = tile_ind;
+
+    // // Get sprite palette
+    // ppu.palette_table[palette_ind] = get_palette(player_size, player_data);
+
+    // // Set sprite tiles
+    // set_sprite_tiles(player_size, player_data, ppu.palette_table[palette_ind], tile_ind);
+
+    // // Only one palette created for flamingo 
+    // palette_ind++;
 
 
     std::cout << "Flamingo: tile start = " << unsigned(sprite_info.back().start_tile_index ) 

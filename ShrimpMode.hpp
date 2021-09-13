@@ -27,7 +27,7 @@ struct ShrimpMode : Mode {
 
 
 	//player position:
-	glm::vec2 player_at = glm::vec2(0.0f);
+	glm::vec2 player_at = glm::vec2(PPU466::ScreenWidth/2-16.f, 0.0f);
 
     //shrimp eaten:
     int8_t shrimp_ct = 0;
@@ -36,7 +36,7 @@ struct ShrimpMode : Mode {
     void set_sprite_tiles(glm::uvec2 sprite_size, 
                       std::vector< glm::u8vec4 > &sprite_data,
                       PPU466::Palette &sprite_palette,
-                      uint32_t &tile_ind);
+                      uint8_t &tile_ind);
 
 
 	//----- drawing handled by PPU466 -----
@@ -53,12 +53,15 @@ struct ShrimpMode : Mode {
     const uint8_t sprite_tile_dim = 2;
 
     // The hack: each sprite is represented by 2x2=4 smaller NES sprites
+    const uint8_t sprites_per_sprite = 4;
+
     // So it'll make our lives easier to store some information per one of these larger sprites
     struct SpriteInfo {
         SpriteType type;                // what type of sprite is it
         bool consumed = false;          // whether this sprite's been consumed (relevant for Shrimp, Medicine)
         uint8_t palette_index;          // index of sprite's color palette
-        uint8_t start_tile_index;       // the index into the tiles the sprite starts at
+        uint8_t start_tile_index;       // index into the tiles the sprite starts at
+        uint8_t sprite_index;            // index into the sprites the sprite starts at
     };
     std::vector< SpriteInfo > sprite_info;
     // The player (flamingo) will start at sprite 0
