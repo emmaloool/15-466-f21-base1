@@ -5,103 +5,171 @@
 
 //for glm::value_ptr() :
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/ext.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+//for loading/saving PNGs, reading/writing chunk info
+#include "load_save_png.hpp"
 
 #include <random>
+#include <assert.h>
+
+
+PPU466::Palette get_palette(glm::uvec2 size, std::vector< glm::u8vec4 > data) {    
+    // Build dummy palette to grab four colors
+    PPU466::Palette palette = {glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0)};
+    
+    glm::u8vec4 temp_color;
+    int32_t seen_color_inds = 1;    // assume the first color is transparent, so we read only up to 3 colors
+    int32_t i = 0;
+    while ((seen_color_inds < 4) && (i < size.x * size.y)) {
+        temp_color = data[i];
+
+        // Check colors seen so far, setting colors if they're new
+        if (temp_color == palette[0] || temp_color == palette[1] 
+         || temp_color == palette[2] || temp_color == palette[3]) {
+            i++;
+            continue;
+        }
+        if (temp_color != palette[seen_color_inds]) {
+            palette[seen_color_inds] = temp_color;
+            seen_color_inds++;
+        }
+        i++;
+    }
+
+    return palette;
+}
+
+
+PPU466::Tile set_tilebits(int32_t tile_row, int32_t tile_col,
+                     PPU466::Palette palette, 
+                     glm::uvec2 size, std::vector< glm::u8vec4 > &data) {
+    // Zero-fill tile
+    PPU466::Tile tile;
+    tile.bit0.fill(0);
+    tile.bit1.fill(0);
+
+    // Fill pixel in the canonical row-major order (lower-left -> bottom-right) 
+    glm::u8vec4 pix_color;
+    for (int32_t pix_y = 0; pix_y < 8; pix_y++) {
+        for (int32_t pix_x = 0; pix_x < 8; pix_x++) {
+            pix_color = data[((tile_row + pix_y) * size.x) + (tile_col + pix_x)];
+            // Set color bit according to palette
+            for (int8_t pal_ind = 0; pal_ind < 4; pal_ind++) {
+                if (pix_color == palette[pal_ind]) {
+                    // If palette color at IND matches, set corresponding high/low bits
+                    // in the tile, at the column index pix_x
+                    tile.bit0[pix_y] |=  ((pal_ind & 0x1) << pix_x);
+                    tile.bit1[pix_y] |= (((pal_ind & 0x2) << pix_x) >> 1); // need to shift higher bit back down before setting
+                }
+            }
+        }
+    }    
+    return tile;
+}
+
+
+void ShrimpMode::set_sprite_tiles(glm::uvec2 sprite_size, 
+                      std::vector< glm::u8vec4 > &sprite_data,
+                      PPU466::Palette &sprite_palette,
+                      uint32_t &tile_ind) {
+    //Sprites should be of size 16x16 pixels => 2x2 tiles
+    assert(((sprite_size.x / 8) == sprite_tile_dim) && ((sprite_size.y / 8) == sprite_tile_dim));
+
+    // Set tile bits for the 2x2 tiles of the sprite:
+    // Break up 16x16 image into 4 8x8 tiles
+    for (int32_t tile_y = 0; tile_y < sprite_tile_dim; tile_y++) {
+        for (int32_t tile_x = 0; tile_x < sprite_tile_dim; tile_x++) {
+            // Tiles start offset 8
+            int32_t tile_row_start = tile_y * 8;    
+            int32_t tile_col_start = tile_x * 8;
+
+            // Set color bits for tile directly
+            PPU466::Tile result = 
+                    set_tilebits(tile_row_start, tile_col_start, sprite_palette, sprite_size, sprite_data);
+
+            ppu.tile_table[tile_ind].bit0 = result.bit0;
+            ppu.tile_table[tile_ind].bit1 = result.bit1;
+            tile_ind++;
+        }
+    }
+}
+
 
 ShrimpMode::ShrimpMode() {
-	//TODO:
-	// you *must* use an asset pipeline of some sort to generate tiles.
-	// don't hardcode them like this!
-	// or, at least, if you do hardcode them like this,
-	//  make yourself a script that spits out the code that you paste in here
-	//   and check that script into your repository.
+    // -------------------------- PPU Housekeeping --------------------------
 
-	//Also, *don't* use these tiles in your game:
+    // Clear the PPU palette table?
+    for (auto &palette : ppu.palette_table) {
+        palette[0] = glm::u8vec4(0);
+		palette[1] = glm::u8vec4(0);
+		palette[2] = glm::u8vec4(0);
+		palette[3] = glm::u8vec4(0);
+    }
 
-	{ //use tiles 0-16 as some weird dot pattern thing:
-		std::array< uint8_t, 8*8 > distance;
-		for (uint32_t y = 0; y < 8; ++y) {
-			for (uint32_t x = 0; x < 8; ++x) {
-				float d = glm::length(glm::vec2((x + 0.5f) - 4.0f, (y + 0.5f) - 4.0f));
-				d /= glm::length(glm::vec2(4.0f, 4.0f));
-				distance[x+8*y] = std::max(0,std::min(255,int32_t( 255.0f * d )));
-			}
-		}
-		for (uint32_t index = 0; index < 16; ++index) {
-			PPU466::Tile tile;
-			uint8_t t = (255 * index) / 16;
-			for (uint32_t y = 0; y < 8; ++y) {
-				uint8_t bit0 = 0;
-				uint8_t bit1 = 0;
-				for (uint32_t x = 0; x < 8; ++x) {
-					uint8_t d = distance[x+8*y];
-					if (d > t) {
-						bit0 |= (1 << x);
-					} else {
-						bit1 |= (1 << x);
-					}
-				}
-				tile.bit0[y] = bit0;
-				tile.bit1[y] = bit1;
-			}
-			ppu.tile_table[index] = tile;
-		}
-	}
+    // Also clear the tile table bits?
+    for (auto &tile : ppu.tile_table) {
+        tile.bit0 = {
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+        };
 
-	//use sprite 32 as a "player":
-	ppu.tile_table[32].bit0 = {
-		0b01111110,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b11111111,
-		0b01111110,
-	};
-	ppu.tile_table[32].bit1 = {		// Sets face
-		0b00000000,
-		0b00000000,
-		0b00100100,//0b00011000,
-		0b00111100,//0b00100100,
-		0b00000000,
-		0b00100100,
-		0b00000000,
-		0b00000000,
-	};
+        tile.bit1 = {
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+        };
+    }
 
-	//makes the outside of tiles 0-16 solid:
-	ppu.palette_table[0] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
+    // As we make sprites, helps to track which tiles/palettes are occupied
+    uint32_t palette_ind = 4;
+    uint32_t tile_ind = 0;
 
-	//makes the center of tiles 0-16 solid:
-	ppu.palette_table[1] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
+    // -------------------------- Load PNGs -------------------------- 
+    // The following asset pipeline routine to convert a PNG into a sprite
+    // (steps include creating a color palette and setting tiles) is loosely 
+    // inspired by https://github.com/riyuki15/15-466-f20-base1/blob/master/PlayMode.cpp
 
-	//used for the player:
-	ppu.palette_table[7] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-		glm::u8vec4(0xff, 0xff, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-	};
+    // auto configure_sprite = [this](const char* filename) {
 
-	//used for the misc other sprites:
-	ppu.palette_table[6] = {
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),		// change corner colors
-		glm::u8vec4(0xff, 0x00, 0x00, 0xff),		// changes sprite body color
-		glm::u8vec4(0x00, 0x00, 0x00, 0xff),
-		glm::u8vec4(0x00, 0x00, 0x00, 0x00),
-	};
+    // Load player 
+    glm::uvec2 player_size;
+    std::vector< glm::u8vec4 > player_data;
+    OriginLocation player_origin = LowerLeftOrigin;
+    load_png("images/flamingo.png", &player_size, &player_data, player_origin);
 
+    // Create metadata tracking sprite
+    sprite_info.emplace_back(SpriteInfo());
+    sprite_info.back().type = Flamingo;
+    sprite_info.back().palette_index = palette_ind;
+    sprite_info.back().start_tile_index = tile_ind;
+
+    std::cout << sprite_info.size() << std::endl;
+
+    // Get sprite palette
+    ppu.palette_table[palette_ind] = get_palette(player_size, player_data);
+
+    // Set sprite tiles
+    set_sprite_tiles(player_size, player_data, ppu.palette_table[palette_ind], tile_ind);
+
+    // Only one palette created for flamingo 
+    palette_ind++;
+
+
+    std::cout << "Flamingo: tile start = " << unsigned(sprite_info.back().start_tile_index ) 
+                << ", palette index = " << unsigned(sprite_info.back().palette_index) << std::endl;
 }
 
 ShrimpMode::~ShrimpMode() {
@@ -148,11 +216,6 @@ bool ShrimpMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void ShrimpMode::update(float elapsed) {
 
-	//slowly rotates through [0,1):
-	// (will be used to set background color)
-	background_fade += elapsed / 10.0f;
-	background_fade -= std::floor(background_fade);
-
 	constexpr float PlayerSpeed = 30.0f;
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
 	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
@@ -164,47 +227,29 @@ void ShrimpMode::update(float elapsed) {
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
+
+    
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
+    // background: a little baby flamingo pink
+    ppu.background_color = glm::u8vec4( 0xfc, 0xc5, 0xfa, 0xff );
+
 	//--- set ppu state based on game state ---
+    SpriteInfo flamingo_info = sprite_info[0];
 
-	//background color will be some hsv-like fade:
-	ppu.background_color = glm::u8vec4(
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 0.0f / 3.0f) ) ) ))),
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 1.0f / 3.0f) ) ) ))),
-		std::min(255,std::max(0,int32_t(255 * 0.5f * (0.5f + std::sin( 2.0f * M_PI * (background_fade + 2.0f / 3.0f) ) ) ))),
-		0xff
-	);
-
-	//tilemap gets recomputed every frame as some weird plasma thing:
-	//NOTE: don't do this in your game! actually make a map or something :-)
-	for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
-		for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
-			//TODO: make weird plasma thing
-			ppu.background[x+PPU466::BackgroundWidth*y] = ((x+y)%16);
-		}
-	}
-
-	//background scroll:
-	ppu.background_position.x = int32_t(-0.5f * player_at.x);
-	ppu.background_position.y = int32_t(-0.5f * player_at.y);
-
-	//player sprite:
-	ppu.sprites[0].x = int32_t(player_at.x);
-	ppu.sprites[0].y = int32_t(player_at.y);
-	ppu.sprites[0].index = 32;
-	ppu.sprites[0].attributes = 7;
-
-	//some other misc sprites:
-	for (uint32_t i = 1; i < 63; ++i) {
-		float amt = (i + 2.0f * background_fade) / 62.0f;
-		ppu.sprites[i].x = int32_t(0.5f * PPU466::ScreenWidth + std::cos( 2.0f * M_PI * amt * 5.0f + 0.01f * player_at.x) * 0.4f * PPU466::ScreenWidth);
-		ppu.sprites[i].y = int32_t(0.5f * PPU466::ScreenHeight + std::sin( 2.0f * M_PI * amt * 3.0f + 0.01f * player_at.y) * 0.4f * PPU466::ScreenWidth);
-		ppu.sprites[i].index = 32;
-		ppu.sprites[i].attributes = 6;
-		if (i % 2) ppu.sprites[i].attributes |= 0x80; //'behind' bit
-	}
+    int32_t sprite_i, row_offset, col_offset;
+    for (int32_t r = 0; r < sprite_tile_dim; r++) {
+        for (int32_t c = 0; c < sprite_tile_dim; c++) {
+            sprite_i = (r * sprite_tile_dim) + c;
+            row_offset = r * 8; // offset for y
+            col_offset = c * 8; // offset for x
+            ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
+            ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
+            ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + sprite_i;
+            ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
+        }
+    }
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
