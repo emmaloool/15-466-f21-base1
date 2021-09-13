@@ -197,14 +197,15 @@ ShrimpMode::ShrimpMode() {
         }
     };
 
-    // --------- Create flamingo (player sprite)
+    // --------- Create flamingo versions (player sprite)
+    flamingo_start = {palette_ind, tile_ind, sprite_ind};
     configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    // TODO: import other images?
-    for (auto i = 0; i < 4; i++) {
-        std::cout << "Most pink palette" << std::endl;
-        std::cout << glm::to_string(ppu.palette_table[palette_ind][i]) << std::endl;
-    }
 
+    // // TODO: import other images?
+    // for (auto i = 0; i < 4; i++) {
+    //     std::cout << "Most pink palette" << std::endl;
+    //     std::cout << glm::to_string(ppu.palette_table[palette_ind][i]) << std::endl;
+    // }
 
     // Only one palette is used per type of sprite for this game
     palette_ind++;
@@ -261,6 +262,7 @@ ShrimpMode::ShrimpMode() {
     uint8_t sprite_ct = 0;
 
     // --------- Create shrimp
+    shrimp_start = {palette_ind, tile_ind, sprite_ct};
     for (uint8_t shrimp_ct = sprite_ct; shrimp_ct < 8; shrimp_ct++) {
         uint8_t shrimp_x = coordinates[2 * shrimp_ct];
         uint8_t shrimp_y = coordinates[(2 * shrimp_ct) + 1];
@@ -280,6 +282,7 @@ ShrimpMode::ShrimpMode() {
     palette_ind++;
 
     // --------- Create plants
+    plant_start = {palette_ind, tile_ind, sprite_ct};
     for (uint8_t plant_ct = sprite_ct; plant_ct < (sprite_ct + 5); plant_ct++) {
         uint8_t plant_x = coordinates[2 * plant_ct];
         uint8_t plant_y = coordinates[(2 * plant_ct) + 1];
@@ -291,10 +294,24 @@ ShrimpMode::ShrimpMode() {
     palette_ind++;
 
     // --------- Create medicine
+    med_start = {palette_ind, tile_ind, sprite_ct};
     uint8_t med_x = coordinates[2 * sprite_ct];
     uint8_t med_y = coordinates[(2 * sprite_ct) + 1];
     configure_sprite("images/pepto.png", Medicine, false, palette_ind, tile_ind, sprite_ind, med_x, med_y);
     fix_sprite_tiles(med_x, med_y);
+
+    std::cout << "FLAMINGO: {" << unsigned(flamingo_start.first_palette_ind) << ","
+                            << unsigned(flamingo_start.first_tile_ind) << ","
+                            << unsigned(flamingo_start.first_sprite_ind) << "}" << std::endl;
+      std::cout << "SHRIMP: {" << unsigned(shrimp_start.first_palette_ind) << ","
+                            << unsigned(shrimp_start.first_tile_ind) << ","
+                            << unsigned(shrimp_start.first_sprite_ind) << "}" << std::endl;
+      std::cout << "PLANT: {" << unsigned(plant_start.first_palette_ind) << ","
+                            << unsigned(plant_start.first_tile_ind) << ","
+                            << unsigned(plant_start.first_sprite_ind) << "}" << std::endl;
+      std::cout << "MED: {" << unsigned(med_start.first_palette_ind) << ","
+                            << unsigned(med_start.first_tile_ind) << ","
+                            << unsigned(med_start.first_sprite_ind) << "}" << std::endl;
 }
 
 ShrimpMode::~ShrimpMode() {
@@ -354,7 +371,7 @@ void ShrimpMode::update(float elapsed) {
     if ((player_at.y + 16) >= PPU466::ScreenHeight) player_at.y = PPU466::ScreenHeight - 16;
 
     // Handle collisions with scene
-    for (uint8_t i = other_sprites_start; i < sprite_infos.size(); i++) {
+    for (uint8_t i = shrimp_start.first_sprite_ind; i < sprite_infos.size(); i++) {
         SpriteInfo &sinfo = sprite_infos[i];
         std::string type;
         if (sinfo.type == Shrimp) type = "Shrimp";
@@ -364,10 +381,8 @@ void ShrimpMode::update(float elapsed) {
 
         glm::vec2 min = glm::max(glm::vec2(sprite.x, sprite.y), glm::vec2(player_at.x, player_at.y));
         glm::vec2 max = glm::min(glm::vec2(sprite.x, sprite.y) + 16.f, glm::vec2(player_at.x, player_at.y) + 16.f);
-		if (min.x > max.x || min.y > max.y) continue; //if no overlap, no collision:
 
-        // std::cout << "Handling collision with sprite " << unsigned(i) << ", " 
-        //     <<  type << ", start (x,y) = " << unsigned(sprite.x) << "," << unsigned(sprite.y) << std::endl;
+		if (min.x > max.x || min.y > max.y) continue; //if no overlap, no collision:
 
         // Handle collision based on type
         if (sinfo.type == Shrimp) {
@@ -382,7 +397,7 @@ void ShrimpMode::update(float elapsed) {
             else if (up.pressed)    player_at.y -= PlayerSpeed * elapsed;
         }
         else if (sinfo.type == Medicine) {
-            for (uint8_t s = other_sprites_start; s < plant_start; s++) {
+            for (uint8_t s = shrimp_start.first_sprite_ind; s < plant_start.first_sprite_ind; s++) {
                 SpriteInfo &shrimp_info = sprite_infos[s];
                 shrimp_info.consumed = false;
             }
@@ -395,6 +410,8 @@ void ShrimpMode::update(float elapsed) {
     right.downs = 0;
     up.downs = 0;
     down.downs = 0;
+
+    how_pink = ShrimpMode::Pinkness(std::min(score - 1, 0)  / 2);
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {

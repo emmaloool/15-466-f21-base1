@@ -66,17 +66,28 @@ struct ShrimpMode : Mode {
     std::vector< SpriteInfo > sprite_infos;
     // The player (flamingo) will start at sprite 0
 
-    enum Pinkness {
-        NoPink,
-        SomePink,
-        MorePink,
-        MostPink
-    };
-    Pinkness how_pink = NoPink;
+    typedef enum Pink {
+        LittlePink = 0,
+        SomePink = 1,
+        MostPink = 2,
+        Sick = 3
+    } Pinkness;
+    Pinkness how_pink = LittlePink;
 
-    const uint8_t other_sprites_start = 1;
-    const uint8_t plant_start = 9;
-    const uint8_t med_start = 14;
+    // Organize start indices for each type of sprite
+    struct SpriteStarts {
+        uint8_t first_palette_ind;
+        uint8_t first_tile_ind;
+        uint8_t first_sprite_ind;
+    };
+    SpriteStarts flamingo_start;
+    SpriteStarts shrimp_start;
+    SpriteStarts plant_start;
+    SpriteStarts med_start;
+
+    // const uint8_t other_sprites_start = 1;
+    // const uint8_t plant_start = 9;
+    // const uint8_t med_start = 14;
 
 	PPU466 ppu;
 };
