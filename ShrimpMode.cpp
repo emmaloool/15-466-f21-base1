@@ -353,12 +353,6 @@ void ShrimpMode::update(float elapsed) {
     if ((player_at.x + 16) >= PPU466::ScreenWidth)  player_at.x = PPU466::ScreenWidth - 16;
     if ((player_at.y + 16) >= PPU466::ScreenHeight) player_at.y = PPU466::ScreenHeight - 16;
 
-	//reset button press counters:
-	left.downs = 0;
-	right.downs = 0;
-	up.downs = 0;
-	down.downs = 0;
-
     // Handle collisions with scene
     for (uint8_t i = other_sprites_start; i < sprite_infos.size(); i++) {
         SpriteInfo &sinfo = sprite_infos[i];
@@ -370,38 +364,36 @@ void ShrimpMode::update(float elapsed) {
 
         glm::vec2 min = glm::max(glm::vec2(sprite.x, sprite.y), glm::vec2(player_at.x, player_at.y));
         glm::vec2 max = glm::min(glm::vec2(sprite.x, sprite.y) + 16.f, glm::vec2(player_at.x, player_at.y) + 16.f);
-
 		if (min.x > max.x || min.y > max.y) continue; //if no overlap, no collision:
-    
+
         // std::cout << "Handling collision with sprite " << unsigned(i) << ", " 
         //     <<  type << ", start (x,y) = " << unsigned(sprite.x) << "," << unsigned(sprite.y) << std::endl;
 
         // Handle collision based on type
         if (sinfo.type == Shrimp) {
-            if (sinfo.consumed) break; // Do nothing if consumed, shouldn't render to screen
+            if (sinfo.consumed) break;      // Do nothing if consumed
             score++;
             sinfo.consumed = true;
-            std::cout << "*** SCORE = \n" << signed(score) << std::endl;
         } 
-        else if (sinfo.type == Plant) {
-            // Avoid..? TODO handle later
+        else if (sinfo.type == Plant) {     // Don't walk over plants, just undo step
+            if (left.pressed)       player_at.x += PlayerSpeed * elapsed;
+            else if (right.pressed) player_at.x -= PlayerSpeed * elapsed;
+            else if (down.pressed)  player_at.y += PlayerSpeed * elapsed;
+            else if (up.pressed)    player_at.y -= PlayerSpeed * elapsed;
         }
         else if (sinfo.type == Medicine) {
-            // Already eaten 
-            if (!sinfo.consumed) {
-                for (uint8_t s = other_sprites_start; s < plant_start; s++) {
-                    SpriteInfo &shrimp_info = sprite_infos[s];
-                    shrimp_info.consumed = false;
-                }
-                score = 0;
+            for (uint8_t s = other_sprites_start; s < plant_start; s++) {
+                SpriteInfo &shrimp_info = sprite_infos[s];
+                shrimp_info.consumed = false;
             }
-
-        }
-            // TODO: Could also just break after handling a single sprite, since they're not going to overlap
-        
-
+            score = 0;
+        }  
     }
-
+    //reset button press counters:
+    left.downs = 0;
+    right.downs = 0;
+    up.downs = 0;
+    down.downs = 0;
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
