@@ -355,16 +355,36 @@ void ShrimpMode::update(float elapsed) {
 
     // Handle collisions with scene
     for (uint8_t i = other_sprites_start; i < sprite_infos.size(); i++) {
-        SpriteInfo sinfo = sprite_infos[i];
+        SpriteInfo &sinfo = sprite_infos[i];
         std::string type;
         if (sinfo.type == Shrimp) type = "Shrimp";
         else if (sinfo.type == Plant) type = "Plant";
         else if (sinfo.type == Medicine) type = "Medicine";
         PPU466::Sprite sprite = ppu.sprites[sinfo.sprite_index];
-        uint8_t start_x = sprite.x;
-        uint8_t start_y = sprite.y;
-        std::cout << "Handling collision with sprite " << unsigned(i) << ", " 
-                  <<  type << ", start (x,y) = " << unsigned(start_x) << "," << unsigned(start_y) << std::endl;
+
+        glm::vec2 min = glm::max(glm::vec2(sprite.x, sprite.y), glm::vec2(player_at.x, player_at.y));
+        glm::vec2 max = glm::min(glm::vec2(sprite.x, sprite.y) + 16.f, glm::vec2(player_at.x, player_at.y) + 16.f);
+
+		if (min.x > max.x || min.y > max.y) continue; //if no overlap, no collision:
+    
+        // std::cout << "Handling collision with sprite " << unsigned(i) << ", " 
+        //     <<  type << ", start (x,y) = " << unsigned(sprite.x) << "," << unsigned(sprite.y) << std::endl;
+
+        // Handle collision based on type
+        if (sinfo.type == Shrimp) {
+            if (sinfo.consumed) continue; // Do nothing if consumed, shouldn't render to screen
+            score++;
+            sinfo.consumed = true;
+            std::cout << "*** SCORE = \n" << signed(score) << std::endl;
+        } 
+        else if (sinfo.type == Plant) {
+            // Avoid..? TODO handle later
+        }
+        else if (sinfo.type == Medicine) {
+
+        }
+            // TODO: Could also just break after handling a single sprite, since they're not going to overlap
+        
 
     }
 
@@ -377,25 +397,11 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 
 	//--- set ppu state based on game state ---
 
-    // ----- Flamingo
-    SpriteInfo flamingo_info = sprite_infos[0];
 
-    uint32_t sprite_i, row_offset, col_offset;
-    for (int32_t r = 0; r < sprite_tile_dim; r++) {
-        for (int32_t c = 0; c < sprite_tile_dim; c++) {
-            sprite_i = (r * sprite_tile_dim) + c;
-            row_offset = r * 8; // offset for y
-            col_offset = c * 8; // offset for x
-            ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
-            ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
-            ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + sprite_i;
-            ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
-        }
-    }
 
     // Draw directly with the x,y saved into sprite
     // Remaining sprites
-    uint32_t big_sprite_i;
+    uint32_t sprite_i, row_offset, col_offset, big_sprite_i;
     for (big_sprite_i = 1; big_sprite_i < sprite_infos.size(); big_sprite_i++) {
         SpriteInfo sprite_info = sprite_infos[big_sprite_i];
         for (int32_t r = 0; r < sprite_tile_dim; r++) {
@@ -407,6 +413,21 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
             }
         }
 
+    }
+
+    // ----- Flamingo (rendered last so it'll draw on top)
+    SpriteInfo flamingo_info = sprite_infos[0];
+
+    for (int32_t r = 0; r < sprite_tile_dim; r++) {
+        for (int32_t c = 0; c < sprite_tile_dim; c++) {
+            sprite_i = (r * sprite_tile_dim) + c;
+            row_offset = r * 8; // offset for y
+            col_offset = c * 8; // offset for x
+            ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
+            ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
+            ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + sprite_i;
+            ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
+        }
     }
 
 	//--- actually draw ---
