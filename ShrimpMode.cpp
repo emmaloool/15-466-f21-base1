@@ -15,12 +15,12 @@
 #include <assert.h>
 
 
-PPU466::Palette get_palette(glm::uvec2 size, std::vector< glm::u8vec4 > data, bool is_color_palette=false) {    
+PPU466::Palette get_palette(glm::uvec2 size, std::vector< glm::u8vec4 > data) {    
     // Build dummy palette to grab four colors
     PPU466::Palette palette = {glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0)};
     
     glm::u8vec4 temp_color;
-    int32_t seen_color_inds = (is_color_palette) ? 0 : 1;  // assume the first color is transparent, so we read only up to 3 colors
+    int32_t seen_color_inds = 1;  // assume the first color is transparent, so we read only up to 3 colors
     int32_t i = 0;
     while ((seen_color_inds < 4) && (i < size.x * size.y)) {
         temp_color = data[i];
@@ -256,15 +256,12 @@ ShrimpMode::ShrimpMode() {
         uint8_t shrimp_y = coordinates[(2 * shrimp_ct) + 1];
 
         std::string shrimp_png;
-        uint8_t shrimp_result = shrimp_ct / 2;
+        uint8_t shrimp_result = shrimp_ct / 4;
         if (shrimp_result == 0)      shrimp_png = "images/shrimp_top.png";
-        else if (shrimp_result == 1) shrimp_png = "images/shrimp_bottom.png";
-        else if (shrimp_result == 2) shrimp_png = "images/shrimp_left.png";
         else                         shrimp_png = "images/shrimp_right.png";
     
         configure_sprite(shrimp_png.c_str(), Shrimp, false, palette_ind, tile_ind, sprite_ind, shrimp_x, shrimp_y);
         fix_sprite_tiles(shrimp_x, shrimp_y);
-
     }
     sprite_ct += 7;
     palette_ind++;
@@ -294,50 +291,16 @@ ShrimpMode::ShrimpMode() {
 
 
     flamingo_start = {palette_ind, tile_ind, sprite_ct};
-        std::cout << "WHITE FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
-                            << unsigned(tile_ind) << ", sprite = "
-                            << unsigned(sprite_ind) << "}" << std::endl;
     configure_sprite("images/flamingo_no_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    fix_sprite_tiles(200, 0);
     palette_ind++;
-
-        std::cout << "PINK FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
-                            << unsigned(tile_ind) << ", sprite = "
-                            << unsigned(sprite_ind) << "}" << std::endl;
 
     configure_sprite("images/flamingo_little_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    fix_sprite_tiles(0, 0);
     palette_ind++;
-
-        std::cout << "MAGENTA FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
-                            << unsigned(tile_ind) << ", sprite = "
-                            << unsigned(sprite_ind) << "}" << std::endl;
 
     configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    fix_sprite_tiles(0, 200);
     palette_ind++;
 
-        std::cout << "SICK FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
-                            << unsigned(tile_ind) << ", sprite = "
-                            << unsigned(sprite_ind) << "}" << std::endl;
     configure_sprite("images/flamingo_sick.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    fix_sprite_tiles(200, 200);
-    palette_ind++;
-
-    std::cout << "FLAMINGO: {" << unsigned(flamingo_start.first_palette_ind) << ","
-                            << unsigned(flamingo_start.first_tile_ind) << ","
-                            << unsigned(flamingo_start.first_sprite_ind) << "}" << std::endl;
-    // std::cout << "SHRIMP: {" << unsigned(shrimp_start.first_palette_ind) << ","
-    //                     << unsigned(shrimp_start.first_tile_ind) << ","
-    //                     << unsigned(shrimp_start.first_sprite_ind) << "}" << std::endl;
-    // std::cout << "PLANT: {" << unsigned(plant_start.first_palette_ind) << ","
-    //                     << unsigned(plant_start.first_tile_ind) << ","
-    //                     << unsigned(plant_start.first_sprite_ind) << "}" << std::endl;
-    // std::cout << "MED: {" << unsigned(med_start.first_palette_ind) << ","
-    //                     << unsigned(med_start.first_tile_ind) << ","
-    //                     << unsigned(med_start.first_sprite_ind) << "}" << std::endl;
-
-    assert(sprite_ind <= 64);
 }
 
 ShrimpMode::~ShrimpMode() {
@@ -440,27 +403,20 @@ void ShrimpMode::update(float elapsed) {
     how_pink = ShrimpMode::Pinkness(std::max(score - 1, 0)  / 2);
 
     // Set visibility only for the current shade of flamingo
-    // std::cout << "how pink? " << how_pink << std::endl;
     for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
         uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
-        SpriteInfo sprite_info = sprite_infos[big_sprite_i];
-        if (flam_i == how_pink) {
-            // std::cout << "*** flamingo " << flam_i << " VISIBLE " << std::endl;
-            sprite_info.consumed = false;
-        }
-        else {
-            // std::cout << "*** flamingo " << flam_i << " HIDDEN " << std::endl;
-            sprite_info.consumed = true;
-        }
+        SpriteInfo &sprite_info = sprite_infos[big_sprite_i];
+        if (flam_i == how_pink) sprite_info.consumed = false;
+        else sprite_info.consumed = true;
     }
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 
     // background: a little baby flamingo pink
-    ppu.background_color = glm::u8vec4( 0xAD, 0xD8, 0xE6, 0xff );
+    ppu.background_color = glm::u8vec4( 0x65, 0xb4, 0xc9, 0xff );
 
-	//--- set ppu state based on game state ---
+    //--- set ppu state based on game state ---
 
     // ---- Render all other sprites first
     uint32_t sprite_i, big_sprite_i;
@@ -480,13 +436,10 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
     uint32_t row_offset, col_offset;
     for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
         SpriteInfo flam_info = sprite_infos[flamingo_start.first_sprite_ind + flam_i];
-        assert(flam_info.type == Flamingo);
         if (flam_i == how_pink) {
-            // std::cout << "Drawing flamingo " << flam_i << std::endl;
             for (int32_t r = 0; r < sprite_tile_dim; r++) {
                 for (int32_t c = 0; c < sprite_tile_dim; c++) {
                     sprite_i = flam_info.sprite_index + (r * sprite_tile_dim) + c;
-                    assert(sprite_i >= 48);
                     row_offset = r * 8; // offset for y
                     col_offset = c * 8; // offset for x
                     ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
@@ -496,36 +449,15 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
                 }
             }
         }
+        else {
+            for (int32_t r = 0; r < sprite_tile_dim; r++) {
+                for (int32_t c = 0; c < sprite_tile_dim; c++) {
+                    sprite_i = flam_info.sprite_index + (r * sprite_tile_dim) + c;
+                    ppu.sprites[sprite_i].attributes = 0;
+                }
+            }
+        }
     }
-
-
-    // for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
-    //     uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
-    //     SpriteInfo sprite_info = sprite_infos[big_sprite_i];
-    //     if (flam_i == how_pink) {
-    //         for (int32_t r = 0; r < sprite_tile_dim; r++) {
-    //             for (int32_t c = 0; c < sprite_tile_dim; c++) {
-    //                 sprite_i = (flamingo_info.sprite_index + how_pink) + (r * sprite_tile_dim) + c;
-    //                 row_offset = r * 8; // offset for y
-    //                 col_offset = c * 8; // offset for x
-    //                 ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
-    //                 ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
-    //                 ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + (how_pink * 4) + (r * sprite_tile_dim) + c;
-    //                 ppu.sprites[sprite_i].attributes = flamingo_info.palette_index + how_pink;
-    //             }
-    //         }
-    //     }
-    //     else {
-    //         for (int32_t r = 0; r < sprite_tile_dim; r++) {
-    //             for (int32_t c = 0; c < sprite_tile_dim; c++) {
-    //                 // "Hide" sprite if consumed, by changing its color palette
-    //                 sprite_i = (flamingo_info.sprite_index + how_pink) + (r * sprite_tile_dim) + c;
-    //                 ppu.sprites[sprite_i].attributes = 0;
-    //             }
-    //         }
-    //     }
-    // }
-
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
