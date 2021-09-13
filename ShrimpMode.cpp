@@ -198,17 +198,18 @@ ShrimpMode::ShrimpMode() {
     };
 
     // --------- Create flamingo versions (player sprite)
-    flamingo_start = {palette_ind, tile_ind, sprite_ind};
-    configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    // flamingo_start = {palette_ind, tile_ind, sprite_ind};
+    // configure_sprite("images/flamingo_no_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    // palette_ind++;
 
-    // // TODO: import other images?
-    // for (auto i = 0; i < 4; i++) {
-    //     std::cout << "Most pink palette" << std::endl;
-    //     std::cout << glm::to_string(ppu.palette_table[palette_ind][i]) << std::endl;
-    // }
+    // configure_sprite("images/flamingo_little_pink.png", Flamingo, true, palette_ind, tile_ind, sprite_ind, 0, 0);
+    // palette_ind++;
 
-    // Only one palette is used per type of sprite for this game
-    palette_ind++;
+    // configure_sprite("images/flamingo_more_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    // palette_ind++;
+
+    // configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    // palette_ind++;
 
     // a complicated way of generating shrimp "evenly" between 4 quadrants in the image
     std::vector<uint8_t>coordinates;
@@ -299,6 +300,18 @@ ShrimpMode::ShrimpMode() {
     uint8_t med_y = coordinates[(2 * sprite_ct) + 1];
     configure_sprite("images/pepto.png", Medicine, false, palette_ind, tile_ind, sprite_ind, med_x, med_y);
     fix_sprite_tiles(med_x, med_y);
+    palette_ind++;
+    sprite_ct += 1;
+
+
+    // // Load sprite
+    // glm::uvec2 flamingo_color_size;
+    // std::vector< glm::u8vec4 > flamingo_color_data;
+    // load_png("images/flamingo_colors.png", &flamingo_color_size, &flamingo_color_data, flamingo_color_data);
+    // ppu.palette_table[palette_ind] = get_palette(flamingo_color_size, flamingo_color_data);
+    flamingo_start = {palette_ind, tile_ind, sprite_ct};
+    configure_sprite("images/flamingo_no_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    palette_ind++;
 
     std::cout << "FLAMINGO: {" << unsigned(flamingo_start.first_palette_ind) << ","
                             << unsigned(flamingo_start.first_tile_ind) << ","
@@ -358,7 +371,7 @@ bool ShrimpMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void ShrimpMode::update(float elapsed) {
 
-	float PlayerSpeed = 30.0f + (score/2 * 30);    // goes faster when score increases
+	float PlayerSpeed = 30.0f + (score/2 * 25);    // goes faster when score increases
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
 	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
 	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
@@ -371,7 +384,7 @@ void ShrimpMode::update(float elapsed) {
     if ((player_at.y + 16) >= PPU466::ScreenHeight) player_at.y = PPU466::ScreenHeight - 16;
 
     // Handle collisions with scene
-    for (uint8_t i = shrimp_start.first_sprite_ind; i < sprite_infos.size(); i++) {
+    for (uint8_t i = shrimp_start.first_sprite_ind; i < flamingo_start.first_sprite_ind; i++) {
         SpriteInfo &sinfo = sprite_infos[i];
         std::string type;
         if (sinfo.type == Shrimp) type = "Shrimp";
@@ -423,8 +436,9 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 
     // Draw directly with the x,y saved into sprite
     // Remaining sprites
-    uint32_t sprite_i, row_offset, col_offset, big_sprite_i;
-    for (big_sprite_i = 1; big_sprite_i < sprite_infos.size(); big_sprite_i++) {
+    // uint32_t sprite_i;
+    uint32_t sprite_i, big_sprite_i;
+    for (big_sprite_i = shrimp_start.first_sprite_ind; big_sprite_i < flamingo_start.first_sprite_ind; big_sprite_i++) {
         SpriteInfo sprite_info = sprite_infos[big_sprite_i];
         for (int32_t r = 0; r < sprite_tile_dim; r++) {
             for (int32_t c = 0; c < sprite_tile_dim; c++) {
@@ -437,16 +451,16 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
     }
 
     // ----- Flamingo (rendered last so it'll draw on top)
-    SpriteInfo flamingo_info = sprite_infos[0];
-
+    SpriteInfo flamingo_info = sprite_infos[flamingo_start.first_sprite_ind];
+    uint32_t row_offset, col_offset;
     for (int32_t r = 0; r < sprite_tile_dim; r++) {
         for (int32_t c = 0; c < sprite_tile_dim; c++) {
-            sprite_i = (r * sprite_tile_dim) + c;
+            sprite_i = flamingo_info.sprite_index + (r * sprite_tile_dim) + c;
             row_offset = r * 8; // offset for y
             col_offset = c * 8; // offset for x
             ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
             ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
-            ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + sprite_i;
+            ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + (r * sprite_tile_dim) + c;//flamingo_info.start_tile_index + sprite_i;
             ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
         }
     }
