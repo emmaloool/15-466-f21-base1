@@ -63,7 +63,7 @@ struct ShrimpMode : Mode {
         uint8_t start_tile_index;       // index into the tiles the sprite starts at
         uint8_t sprite_index;            // index into the sprites the sprite starts at
     };
-    std::vector< SpriteInfo > sprite_info;
+    std::vector< SpriteInfo > sprite_infos;
     // The player (flamingo) will start at sprite 0
 
 	PPU466 ppu;
