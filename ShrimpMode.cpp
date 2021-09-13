@@ -141,14 +141,13 @@ ShrimpMode::ShrimpMode() {
 
     // -------------------------- Load PNGs -------------------------- 
     // As we make sprites, helps to track which tiles/palettes are occupied
-    uint8_t palette_ind = 4;
+    uint8_t palette_ind = 1;
     uint8_t tile_ind = 0;
     uint8_t sprite_ind = 0;
 
-    // The following asset pipeline routine to convert a PNG into a sprite
+    // The following asset pipeline routine and its subroutines to convert a PNG into a sprite
     // (steps include creating a color palette and setting tiles) is loosely 
     // inspired by https://github.com/riyuki15/15-466-f20-base1/blob/master/PlayMode.cpp
-
     auto configure_sprite = [this](const char* filename, 
                                     SpriteType type, bool consumed,
                                     uint8_t palette_ind, uint8_t &tile_ind, uint8_t &sprite_ind,
@@ -176,11 +175,26 @@ ShrimpMode::ShrimpMode() {
         // Most sprites will stay static in one location
         ppu.sprites[sprite_ind].x = x;
         ppu.sprites[sprite_ind].y = y;
-        ppu.sprites[sprite_ind].index = tile_ind;
+        ppu.sprites[sprite_ind].index = sprite_infos.back().start_tile_index;
         ppu.sprites[sprite_ind].attributes = palette_ind;
 
         // 4 smaller sprites make up our sprite
         sprite_ind += sprites_per_sprite;
+    };
+
+    // Sets x,y,tile,palette information for a newly added sprite's subtiles given the starting x,y of the sprite
+    auto fix_sprite_tiles = [this](uint8_t start_x, uint8_t start_y) {
+        for (int32_t r = 0; r < sprite_tile_dim; r++) {
+            for (int32_t c = 0; c < sprite_tile_dim; c++) {
+                uint32_t sprite_i = sprite_infos.back().sprite_index + (r * sprite_tile_dim) + c;
+                uint8_t row_offset = r * 8; // offset for y
+                uint8_t col_offset = c * 8; // offset for x
+                ppu.sprites[sprite_i].x = start_x + col_offset;
+                ppu.sprites[sprite_i].y = start_y + row_offset;
+                ppu.sprites[sprite_i].index = sprite_infos.back().start_tile_index + (r * sprite_tile_dim) + c;
+                ppu.sprites[sprite_i].attributes = sprite_infos.back().palette_index;
+            }
+        }
     };
 
     // --------- Create flamingo (player sprite)
@@ -189,73 +203,92 @@ ShrimpMode::ShrimpMode() {
     // Only one palette is used per type of sprite for this game
     palette_ind++;
 
-    std::cout << "Flamingo: tile start = " << unsigned(sprite_infos.back().start_tile_index ) 
-                << ", palette index = " << unsigned(sprite_infos.back().palette_index)
-                << ", sprite index = " << unsigned(sprite_infos.back().sprite_index) << std::endl;
-
-
-    static std::mt19937 mt; //mersenne twister pseudo-random number generator
-
-    // --------- Create shrimp sprites at random locations
-
+    // a complicated way of generating shrimp "evenly" between 4 quadrants in the image
     std::vector<uint8_t>coordinates;
     {
+        // Shrimp
+        coordinates.push_back(16);
         coordinates.push_back(10);
-        coordinates.push_back(28);
+
         coordinates.push_back(200);
         coordinates.push_back(73);
 
-        coordinates.push_back(45);
-        coordinates.push_back(194);
+        coordinates.push_back(100);
+        coordinates.push_back(223);
+
         coordinates.push_back(143);
         coordinates.push_back(166);
 
         coordinates.push_back(73);
         coordinates.push_back(100);
+
         coordinates.push_back(156);
         coordinates.push_back(100);
 
         coordinates.push_back(34);
         coordinates.push_back(140);
-        coordinates.push_back(175);
-        coordinates.push_back(120);
-    }
 
-    for (uint8_t shrimp_ct = 0; shrimp_ct < 8; shrimp_ct++) {
+        coordinates.push_back(175);
+        coordinates.push_back(30);
+
+     
+        // plants
+        coordinates.push_back(120);
+        coordinates.push_back(60);
+
+        coordinates.push_back(23);
+        coordinates.push_back(178);
+
+        coordinates.push_back(223);
+        coordinates.push_back(145);
+
+        coordinates.push_back(45);
+        coordinates.push_back(45);
+
+        coordinates.push_back(120);
+        coordinates.push_back(120);
+
+        // Potion
+        coordinates.push_back(234);
+        coordinates.push_back(220);
+    }
+    uint8_t sprite_ct = 0;
+
+    // --------- Create shrimp
+    for (uint8_t shrimp_ct = sprite_ct; shrimp_ct < 8; shrimp_ct++) {
         uint8_t shrimp_x = coordinates[2 * shrimp_ct];
-        uint8_t shrimp_y = coordinates[2 * shrimp_ct + 1];
-        // std::cout << "x,y = " << unsigned(shrimp_x) << "," << unsigned(shrimp_y) << std::endl;
+        uint8_t shrimp_y = coordinates[(2 * shrimp_ct) + 1];
 
         std::string shrimp_png;
-        if (shrimp_ct == 0)      shrimp_png = "images/shrimp_top.png";
-        else if (shrimp_ct == 1) shrimp_png = "images/shrimp_bottom.png";
-        else if (shrimp_ct == 2) shrimp_png = "images/shrimp_left.png";
-        else if (shrimp_ct == 3) shrimp_png = "images/shrimp_right.png";
-        else if (shrimp_ct == 4) shrimp_png = "images/plant.png";
-        else if (shrimp_ct == 5) shrimp_png = "images/shrimp_bottom.png";
-        else if (shrimp_ct == 6) shrimp_png = "images/shrimp_left.png";
-        else if (shrimp_ct == 7) shrimp_png = "images/shrimp_right.png";
+        uint8_t shrimp_result = shrimp_ct / 2;
+        if (shrimp_result == 0)      shrimp_png = "images/shrimp_top.png";
+        else if (shrimp_result == 1) shrimp_png = "images/shrimp_bottom.png";
+        else if (shrimp_result == 2) shrimp_png = "images/shrimp_left.png";
+        else                         shrimp_png = "images/shrimp_right.png";
     
-        configure_sprite((const char *)shrimp_png.c_str(), Shrimp, false, palette_ind, tile_ind, sprite_ind, shrimp_x, shrimp_y);
+        configure_sprite(shrimp_png.c_str(), Shrimp, false, palette_ind, tile_ind, sprite_ind, shrimp_x, shrimp_y);
+        fix_sprite_tiles(shrimp_x, shrimp_y);
 
-        // Tweak x,y position of each tile in the sprite
-        for (int32_t r = 0; r < sprite_tile_dim; r++) {
-            for (int32_t c = 0; c < sprite_tile_dim; c++) {
-                uint32_t sprite_i = sprite_ind - 4 + (r * sprite_tile_dim) + c;
-                std::cout << "sprite_i = " << sprite_i << std::endl;
-                uint8_t row_offset = r * 8; // offset for y
-                uint8_t col_offset = c * 8; // offset for x
-                ppu.sprites[sprite_i].x = shrimp_x + col_offset;
-                ppu.sprites[sprite_i].y = shrimp_y + row_offset;
-
-                std::cout << "x,y = " << unsigned(ppu.sprites[sprite_i].x) << "," << unsigned(ppu.sprites[sprite_i].y) << "\n" << std::endl;
-            
-                ppu.sprites[sprite_i].index = sprite_infos.back().start_tile_index + sprite_i;
-                ppu.sprites[sprite_i].attributes = sprite_infos.back().palette_index;
-            }
-        }
     }
+    sprite_ct += 8;
     palette_ind++;
+
+    // --------- Create plants
+    for (uint8_t plant_ct = sprite_ct; plant_ct < (sprite_ct + 5); plant_ct++) {
+        uint8_t plant_x = coordinates[2 * plant_ct];
+        uint8_t plant_y = coordinates[(2 * plant_ct) + 1];
+    
+        configure_sprite("images/plant.png", Plant, false, palette_ind, tile_ind, sprite_ind, plant_x, plant_y);
+        fix_sprite_tiles(plant_x, plant_y);
+    }
+    sprite_ct += 5;
+    palette_ind++;
+
+    // --------- Create medicine
+    uint8_t med_x = coordinates[2 * sprite_ct];
+    uint8_t med_y = coordinates[(2 * sprite_ct) + 1];
+    configure_sprite("images/pepto.png", Medicine, false, palette_ind, tile_ind, sprite_ind, med_x, med_y);
+    fix_sprite_tiles(med_x, med_y);
 }
 
 ShrimpMode::~ShrimpMode() {
@@ -313,8 +346,6 @@ void ShrimpMode::update(float elapsed) {
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
-
-    // Collision handling
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
