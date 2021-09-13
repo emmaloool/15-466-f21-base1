@@ -18,5 +18,10 @@ How To Play:
 
 Sources: (TODO: list a source URL for any assets you did not create yourself. Make sure you have a license for the asset.)
 
+Pixel art created by me (Emma Liu), inspired by the following pixel art:
+- Shrimps: Anastasia Kozheko, https://www.artstation.com/artwork/3oebZY
+- Flamingo: Chibitheo, https://www.dreamstime.com/flamingo-pixel-image-vector-illustration-art-image222128976
+
+
 This game was built with [NEST](NEST.md).
 

@@ -30,7 +30,7 @@ struct ShrimpMode : Mode {
 	glm::vec2 player_at = glm::vec2(PPU466::ScreenWidth/2-16.f, 0.0f);
 
     //shrimp eaten:
-    int8_t shrimp_ct = 0;
+    int8_t score = 0;
 
     //----- helpers? will move later-----
     void set_sprite_tiles(glm::uvec2 sprite_size, 
@@ -65,6 +65,16 @@ struct ShrimpMode : Mode {
     };
     std::vector< SpriteInfo > sprite_infos;
     // The player (flamingo) will start at sprite 0
+
+    enum Pinkness {
+        NoPink,
+        SomePink,
+        MorePink,
+        MostPink
+    };
+    Pinkness how_pink = NoPink;
+
+    const uint8_t other_sprites_start = 1;
 
 	PPU466 ppu;
 };

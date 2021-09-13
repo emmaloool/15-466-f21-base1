@@ -198,7 +198,13 @@ ShrimpMode::ShrimpMode() {
     };
 
     // --------- Create flamingo (player sprite)
-    configure_sprite("images/flamingo.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    // TODO: import other images?
+    for (auto i = 0; i < 4; i++) {
+        std::cout << "Most pink palette" << std::endl;
+        std::cout << glm::to_string(ppu.palette_table[palette_ind][i]) << std::endl;
+    }
+
 
     // Only one palette is used per type of sprite for this game
     palette_ind++;
@@ -346,12 +352,28 @@ void ShrimpMode::update(float elapsed) {
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
+
+    // Handle collisions with scene
+    for (uint8_t i = other_sprites_start; i < sprite_infos.size(); i++) {
+        SpriteInfo sinfo = sprite_infos[i];
+        std::string type;
+        if (sinfo.type == Shrimp) type = "Shrimp";
+        else if (sinfo.type == Plant) type = "Plant";
+        else if (sinfo.type == Medicine) type = "Medicine";
+        PPU466::Sprite sprite = ppu.sprites[sinfo.sprite_index];
+        uint8_t start_x = sprite.x;
+        uint8_t start_y = sprite.y;
+        std::cout << "Handling collision with sprite " << unsigned(i) << ", " 
+                  <<  type << ", start (x,y) = " << unsigned(start_x) << "," << unsigned(start_y) << std::endl;
+
+    }
+
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 
     // background: a little baby flamingo pink
-    ppu.background_color = glm::u8vec4( 0xfc, 0xc5, 0xfa, 0xff );
+    ppu.background_color = glm::u8vec4( 0xAD, 0xD8, 0xE6, 0xff );
 
 	//--- set ppu state based on game state ---
 
