@@ -341,7 +341,7 @@ bool ShrimpMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void ShrimpMode::update(float elapsed) {
 
-	constexpr float PlayerSpeed = 50.0f;
+	float PlayerSpeed = 30.0f + (score/2 * 30);    // goes faster when score increases
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
 	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
 	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
@@ -389,6 +389,7 @@ void ShrimpMode::update(float elapsed) {
             score = 0;
         }  
     }
+
     //reset button press counters:
     left.downs = 0;
     right.downs = 0;
@@ -403,8 +404,6 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 
 	//--- set ppu state based on game state ---
 
-
-
     // Draw directly with the x,y saved into sprite
     // Remaining sprites
     uint32_t sprite_i, row_offset, col_offset, big_sprite_i;
@@ -418,7 +417,6 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
                 else                      ppu.sprites[sprite_i].attributes = sprite_info.palette_index;
             }
         }
-
     }
 
     // ----- Flamingo (rendered last so it'll draw on top)
