@@ -197,34 +197,85 @@ ShrimpMode::ShrimpMode() {
     static std::mt19937 mt; //mersenne twister pseudo-random number generator
 
     // --------- Create shrimp sprites at random locations
-    const uint8_t sprite_x_min = 16;
-    const uint8_t sprite_x_max = PPU466::ScreenWidth - 16;
-    const uint8_t sprite_y_min = 16;
-    const uint8_t sprite_y_max = 240 - 16;        // 240, not PPU466::ScreenHeight, is off-screen in our world...
+    // const uint8_t sprite_x_min = 16;
+    // const uint8_t sprite_x_max = PPU466::ScreenWidth - 16;
+    // const uint8_t sprite_y_min = 16;
+    // const uint8_t sprite_y_max = 240;        // 240, not PPU466::ScreenHeight, is off-screen in our world...
+
+    // a complicated way of generating shrimp "evenly" between 4 quadrants in the image
+    std::vector<uint8_t>coordinates;
+    // for (uint8_t shrimp_ct = 0; shrimp_ct < 8; shrimp_ct++) {
+    //     uint8_t q0_x = sprite_x_min;
+    //     uint8_t q0_y = (sprite_x_max - sprite_x_min) / 2;
+    //     uint8_t q1_x = sprite_y_min;
+    //     uint8_t q1_y = (sprite_y_max - sprite_y_min) / 2; 
+    
+    //     for (uint8_t i = 0; i < 2; i++) {   // evenly go around the circle
+    //         coordinates.push_back((q1_x - q0_x) * (float)(mt() / ((float) mt.max())) - q0_x);
+    //         coordinates.push_back((q1_y - q0_y) * (float)(mt() / ((float) mt.max())) - q0_y);
+
+    //         coordinates.push_back((q1_x - q0_x) * (float)(mt() / ((float) mt.max())) - q0_x);
+    //         coordinates.push_back((sprite_y_max - q1_y) * (float)(mt() / ((float) mt.max())) - q1_y);
+
+    //         coordinates.push_back((sprite_x_max - q1_x) * (float)(mt() / ((float) mt.max())) - q1_x);
+    //         coordinates.push_back((q1_y - q0_y) * (float)(mt() / ((float) mt.max())) - q0_y);
+
+    //         coordinates.push_back((sprite_x_max - q1_x) * (float)(mt() / ((float) mt.max())) - q1_x);
+    //         coordinates.push_back((sprite_y_max - q1_y) * (float)(mt() / ((float) mt.max())) - q1_y);
+    //     }        
+    // }
+    {
+        coordinates.push_back(0);
+        coordinates.push_back(0);
+        coordinates.push_back(200);
+        coordinates.push_back(73);
+
+        coordinates.push_back(100);
+        coordinates.push_back(223);
+        coordinates.push_back(143);
+        coordinates.push_back(166);
+
+
+
+        coordinates.push_back(73);
+        coordinates.push_back(100);
+        coordinates.push_back(156);
+        coordinates.push_back(100);
+
+        coordinates.push_back(34);
+        coordinates.push_back(140);
+        coordinates.push_back(175);
+        coordinates.push_back(120);
+    }
 
     for (uint8_t shrimp_ct = 0; shrimp_ct < 8; shrimp_ct++) {
-        int8_t shrimp_x = (sprite_x_max - sprite_x_min) * (float)(mt() / ((float) mt.max())) - sprite_x_min;
-		int8_t shrimp_y = (sprite_y_max - sprite_y_min) * (float)(mt() / ((float) mt.max())) - sprite_y_min;
+        assert(((2 * shrimp_ct ) + 1) < coordinates.size());
+        uint8_t shrimp_x = coordinates[shrimp_ct];
+        uint8_t shrimp_y = coordinates[shrimp_ct + 1];
+        std::cout << "x,y = " << unsigned(shrimp_x) << "," << unsigned(shrimp_y) << std::endl;
 
         std::string shrimp_png;
-        int8_t shrimp_result = shrimp_ct / 2;
+        uint8_t shrimp_result = shrimp_ct / 2;
+        std::cout << unsigned(shrimp_result) << std::endl;
         if (shrimp_result == 0)      shrimp_png = "images/shrimp_top.png";
-        else if (shrimp_result == 1) shrimp_png = "images/shrimp_left.png";
-        else if (shrimp_result == 2) shrimp_png = "images/shrimp_bottom.png";
-        else                         shrimp_png = "images/shrimp_right.png";
+        else if (shrimp_result == 1) shrimp_png = "images/shrimp_top.png";
+        else if (shrimp_result == 2) shrimp_png = "images/flamingo.png";
+        else if (shrimp_result == 3) shrimp_png = "images/shrimp_top.png";
+        else                         shrimp_png = "images/shrimp_left.png";
+    
         configure_sprite(shrimp_png.c_str(), Shrimp, false, palette_ind, tile_ind, sprite_ind, shrimp_x, shrimp_y);
 
         // Tweak x,y position of each tile in the sprite
          for (int32_t r = 0; r < sprite_tile_dim; r++) {
             for (int32_t c = 0; c < sprite_tile_dim; c++) {
-                uint32_t sprite_i = sprite_ind - 4 + (r * sprite_tile_dim) + c;
+                uint32_t sprite_i = sprite_infos.back().sprite_index + (r * sprite_tile_dim) + c;
+                // std::cout << "sprite_i = " << sprite_i << std::endl;
                 uint8_t row_offset = r * 8; // offset for y
                 uint8_t col_offset = c * 8; // offset for x
                 ppu.sprites[sprite_i].x = shrimp_x + col_offset;
                 ppu.sprites[sprite_i].y = shrimp_y + row_offset;
                 ppu.sprites[sprite_i].index = sprite_infos.back().start_tile_index + sprite_i;
                 ppu.sprites[sprite_i].attributes = sprite_infos.back().palette_index;
-                std::cout << sprite_i << " x,y = " << unsigned(ppu.sprites[sprite_i].x) << "," << unsigned(ppu.sprites[sprite_i].y) << std::endl;
             }
          }
     }
