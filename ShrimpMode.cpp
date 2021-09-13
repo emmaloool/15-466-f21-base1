@@ -15,12 +15,12 @@
 #include <assert.h>
 
 
-PPU466::Palette get_palette(glm::uvec2 size, std::vector< glm::u8vec4 > data) {    
+PPU466::Palette get_palette(glm::uvec2 size, std::vector< glm::u8vec4 > data, bool is_color_palette=false) {    
     // Build dummy palette to grab four colors
     PPU466::Palette palette = {glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0)};
     
     glm::u8vec4 temp_color;
-    int32_t seen_color_inds = 1;    // assume the first color is transparent, so we read only up to 3 colors
+    int32_t seen_color_inds = (is_color_palette) ? 0 : 1;  // assume the first color is transparent, so we read only up to 3 colors
     int32_t i = 0;
     while ((seen_color_inds < 4) && (i < size.x * size.y)) {
         temp_color = data[i];
@@ -197,20 +197,6 @@ ShrimpMode::ShrimpMode() {
         }
     };
 
-    // --------- Create flamingo versions (player sprite)
-    // flamingo_start = {palette_ind, tile_ind, sprite_ind};
-    // configure_sprite("images/flamingo_no_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    // palette_ind++;
-
-    // configure_sprite("images/flamingo_little_pink.png", Flamingo, true, palette_ind, tile_ind, sprite_ind, 0, 0);
-    // palette_ind++;
-
-    // configure_sprite("images/flamingo_more_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    // palette_ind++;
-
-    // configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
-    // palette_ind++;
-
     // a complicated way of generating shrimp "evenly" between 4 quadrants in the image
     std::vector<uint8_t>coordinates;
     {
@@ -263,8 +249,9 @@ ShrimpMode::ShrimpMode() {
     uint8_t sprite_ct = 0;
 
     // --------- Create shrimp
+    // !!TODO: read image, don't use original palette...
     shrimp_start = {palette_ind, tile_ind, sprite_ct};
-    for (uint8_t shrimp_ct = sprite_ct; shrimp_ct < 8; shrimp_ct++) {
+    for (uint8_t shrimp_ct = sprite_ct; shrimp_ct < 7; shrimp_ct++) {
         uint8_t shrimp_x = coordinates[2 * shrimp_ct];
         uint8_t shrimp_y = coordinates[(2 * shrimp_ct) + 1];
 
@@ -284,7 +271,7 @@ ShrimpMode::ShrimpMode() {
 
     // --------- Create plants
     plant_start = {palette_ind, tile_ind, sprite_ct};
-    for (uint8_t plant_ct = sprite_ct; plant_ct < (sprite_ct + 5); plant_ct++) {
+    for (uint8_t plant_ct = sprite_ct; plant_ct < (sprite_ct + 4); plant_ct++) {
         uint8_t plant_x = coordinates[2 * plant_ct];
         uint8_t plant_y = coordinates[(2 * plant_ct) + 1];
     
@@ -303,28 +290,45 @@ ShrimpMode::ShrimpMode() {
     palette_ind++;
     sprite_ct += 1;
 
+    // ------ FLAMINGOS
 
-    // // Load sprite
-    // glm::uvec2 flamingo_color_size;
-    // std::vector< glm::u8vec4 > flamingo_color_data;
-    // load_png("images/flamingo_colors.png", &flamingo_color_size, &flamingo_color_data, flamingo_color_data);
-    // ppu.palette_table[palette_ind] = get_palette(flamingo_color_size, flamingo_color_data);
+
     flamingo_start = {palette_ind, tile_ind, sprite_ct};
     configure_sprite("images/flamingo_no_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    fix_sprite_tiles(200, 0);
     palette_ind++;
+
+    configure_sprite("images/flamingo_little_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    fix_sprite_tiles(0, 0);
+    palette_ind++;
+
+    configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    fix_sprite_tiles(0, 200);
+    palette_ind++;
+
+    configure_sprite("images/flamingo_sick.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
+    fix_sprite_tiles(200, 200);
+    palette_ind++;
+    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][0]) << ","<< std::endl;
+    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][1]) << ","<< std::endl;
+    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][2]) << ","<< std::endl;
+    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][3]) << "," << std::endl;
+
+    std::cout << sprite_ind << std::endl;
 
     std::cout << "FLAMINGO: {" << unsigned(flamingo_start.first_palette_ind) << ","
                             << unsigned(flamingo_start.first_tile_ind) << ","
                             << unsigned(flamingo_start.first_sprite_ind) << "}" << std::endl;
-      std::cout << "SHRIMP: {" << unsigned(shrimp_start.first_palette_ind) << ","
-                            << unsigned(shrimp_start.first_tile_ind) << ","
-                            << unsigned(shrimp_start.first_sprite_ind) << "}" << std::endl;
-      std::cout << "PLANT: {" << unsigned(plant_start.first_palette_ind) << ","
-                            << unsigned(plant_start.first_tile_ind) << ","
-                            << unsigned(plant_start.first_sprite_ind) << "}" << std::endl;
-      std::cout << "MED: {" << unsigned(med_start.first_palette_ind) << ","
-                            << unsigned(med_start.first_tile_ind) << ","
-                            << unsigned(med_start.first_sprite_ind) << "}" << std::endl;
+    std::cout << "SHRIMP: {" << unsigned(shrimp_start.first_palette_ind) << ","
+                        << unsigned(shrimp_start.first_tile_ind) << ","
+                        << unsigned(shrimp_start.first_sprite_ind) << "}" << std::endl;
+    std::cout << "PLANT: {" << unsigned(plant_start.first_palette_ind) << ","
+                        << unsigned(plant_start.first_tile_ind) << ","
+                        << unsigned(plant_start.first_sprite_ind) << "}" << std::endl;
+    std::cout << "MED: {" << unsigned(med_start.first_palette_ind) << ","
+                        << unsigned(med_start.first_tile_ind) << ","
+                        << unsigned(med_start.first_sprite_ind) << "}" << std::endl;
+                        assert(sprite_ind <= 64);
 }
 
 ShrimpMode::~ShrimpMode() {
@@ -424,7 +428,25 @@ void ShrimpMode::update(float elapsed) {
     up.downs = 0;
     down.downs = 0;
 
-    how_pink = ShrimpMode::Pinkness(std::min(score - 1, 0)  / 2);
+    how_pink = ShrimpMode::Pinkness(std::max(score - 1, 0)  / 2);
+
+    // // Set visibility only for the current shade of flamingo
+    // std::cout << "how pink? " << how_pink << std::endl;
+    // for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
+    //     uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
+    //     SpriteInfo sprite_info = sprite_infos[big_sprite_i];
+    //     if (flam_i == how_pink) {
+    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
+    //             ppu.sprites[sprite_info.sprite_index + s].attributes = sprite_info.palette_index;
+    //         }
+    //     }
+    //     else {
+    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
+                
+    //             ppu.sprites[sprite_info.sprite_index + s].attributes = 0;
+    //         }
+    //     }
+    // }
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
@@ -450,12 +472,34 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
         }
     }
 
+    // // Set visibility only for the current shade of flamingo
+    // std::cout << "how pink? " << how_pink << std::endl;
+    // for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
+    //     uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
+    //     SpriteInfo sprite_info = sprite_infos[big_sprite_i];
+    //     if (flam_i == how_pink) {
+    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
+    //             ppu.sprites[sprite_info.sprite_index + s].attributes = sprite_info.palette_index;
+    //         }
+    //     }
+    //     else {
+    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
+                
+    //             ppu.sprites[sprite_info.sprite_index + s].attributes = 0;
+    //         }
+    //     }
+    // }
+
+
+
     // ----- Flamingo (rendered last so it'll draw on top)
     SpriteInfo flamingo_info = sprite_infos[flamingo_start.first_sprite_ind];
+
     uint32_t row_offset, col_offset;
+
     for (int32_t r = 0; r < sprite_tile_dim; r++) {
         for (int32_t c = 0; c < sprite_tile_dim; c++) {
-            sprite_i = flamingo_info.sprite_index + (r * sprite_tile_dim) + c;
+            sprite_i = (flamingo_info.sprite_index) + (r * sprite_tile_dim) + c;//(flamingo_info.sprite_index + how_pink) + (r * sprite_tile_dim) + c;
             row_offset = r * 8; // offset for y
             col_offset = c * 8; // offset for x
             ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
@@ -464,6 +508,17 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
             ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
         }
     }
+
+    // for (int32_t r = 0; r < sprite_tile_dim; r++) {
+    //     for (int32_t c = 0; c < sprite_tile_dim; c++) {
+    //         sprite_i = (flamingo_info.sprite_index + 1) + (r * sprite_tile_dim) + c;
+    //         ppu.sprites[sprite_i].x = 0;
+    //         ppu.sprites[sprite_i].y = 0;
+    //         ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + 4 + (r * sprite_tile_dim) + c;//flamingo_info.start_tile_index + sprite_i;
+    //         ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
+    //     }
+    // }
+
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);
