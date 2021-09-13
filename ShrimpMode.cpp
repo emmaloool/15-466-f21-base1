@@ -341,11 +341,17 @@ bool ShrimpMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void ShrimpMode::update(float elapsed) {
 
-	constexpr float PlayerSpeed = 30.0f;
+	constexpr float PlayerSpeed = 50.0f;
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
 	if (right.pressed) player_at.x += PlayerSpeed * elapsed;
 	if (down.pressed) player_at.y -= PlayerSpeed * elapsed;
 	if (up.pressed) player_at.y += PlayerSpeed * elapsed;
+
+    // Update position to clip within screen boundaries
+    if (player_at.x < 0) player_at.x = 0;
+    if (player_at.y < 0) player_at.y = 0;
+    if ((player_at.x + 16) >= PPU466::ScreenWidth)  player_at.x = PPU466::ScreenWidth - 16;
+    if ((player_at.y + 16) >= PPU466::ScreenHeight) player_at.y = PPU466::ScreenHeight - 16;
 
 	//reset button press counters:
 	left.downs = 0;
@@ -372,7 +378,7 @@ void ShrimpMode::update(float elapsed) {
 
         // Handle collision based on type
         if (sinfo.type == Shrimp) {
-            if (sinfo.consumed) continue; // Do nothing if consumed, shouldn't render to screen
+            if (sinfo.consumed) break; // Do nothing if consumed, shouldn't render to screen
             score++;
             sinfo.consumed = true;
             std::cout << "*** SCORE = \n" << signed(score) << std::endl;
