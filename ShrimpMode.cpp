@@ -222,8 +222,8 @@ ShrimpMode::ShrimpMode() {
         coordinates.push_back(34);
         coordinates.push_back(140);
 
-        coordinates.push_back(175);
-        coordinates.push_back(30);
+        // coordinates.push_back(175);
+        // coordinates.push_back(30);
 
      
         // plants
@@ -239,8 +239,8 @@ ShrimpMode::ShrimpMode() {
         coordinates.push_back(45);
         coordinates.push_back(45);
 
-        coordinates.push_back(120);
-        coordinates.push_back(120);
+        // coordinates.push_back(120);
+        // coordinates.push_back(120);
 
         // Potion
         coordinates.push_back(234);
@@ -266,7 +266,7 @@ ShrimpMode::ShrimpMode() {
         fix_sprite_tiles(shrimp_x, shrimp_y);
 
     }
-    sprite_ct += 8;
+    sprite_ct += 7;
     palette_ind++;
 
     // --------- Create plants
@@ -278,7 +278,7 @@ ShrimpMode::ShrimpMode() {
         configure_sprite("images/plant.png", Plant, false, palette_ind, tile_ind, sprite_ind, plant_x, plant_y);
         fix_sprite_tiles(plant_x, plant_y);
     }
-    sprite_ct += 5;
+    sprite_ct += 4;
     palette_ind++;
 
     // --------- Create medicine
@@ -294,41 +294,50 @@ ShrimpMode::ShrimpMode() {
 
 
     flamingo_start = {palette_ind, tile_ind, sprite_ct};
+        std::cout << "WHITE FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
+                            << unsigned(tile_ind) << ", sprite = "
+                            << unsigned(sprite_ind) << "}" << std::endl;
     configure_sprite("images/flamingo_no_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
     fix_sprite_tiles(200, 0);
     palette_ind++;
+
+        std::cout << "PINK FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
+                            << unsigned(tile_ind) << ", sprite = "
+                            << unsigned(sprite_ind) << "}" << std::endl;
 
     configure_sprite("images/flamingo_little_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
     fix_sprite_tiles(0, 0);
     palette_ind++;
 
+        std::cout << "MAGENTA FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
+                            << unsigned(tile_ind) << ", sprite = "
+                            << unsigned(sprite_ind) << "}" << std::endl;
+
     configure_sprite("images/flamingo_most_pink.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
     fix_sprite_tiles(0, 200);
     palette_ind++;
 
+        std::cout << "SICK FLAMINGO: palette = " << unsigned(palette_ind) << ", tile = "
+                            << unsigned(tile_ind) << ", sprite = "
+                            << unsigned(sprite_ind) << "}" << std::endl;
     configure_sprite("images/flamingo_sick.png", Flamingo, false, palette_ind, tile_ind, sprite_ind, 0, 0);
     fix_sprite_tiles(200, 200);
     palette_ind++;
-    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][0]) << ","<< std::endl;
-    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][1]) << ","<< std::endl;
-    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][2]) << ","<< std::endl;
-    // std::cout << glm::to_string(ppu.palette_table[palette_ind-1][3]) << "," << std::endl;
-
-    std::cout << sprite_ind << std::endl;
 
     std::cout << "FLAMINGO: {" << unsigned(flamingo_start.first_palette_ind) << ","
                             << unsigned(flamingo_start.first_tile_ind) << ","
                             << unsigned(flamingo_start.first_sprite_ind) << "}" << std::endl;
-    std::cout << "SHRIMP: {" << unsigned(shrimp_start.first_palette_ind) << ","
-                        << unsigned(shrimp_start.first_tile_ind) << ","
-                        << unsigned(shrimp_start.first_sprite_ind) << "}" << std::endl;
-    std::cout << "PLANT: {" << unsigned(plant_start.first_palette_ind) << ","
-                        << unsigned(plant_start.first_tile_ind) << ","
-                        << unsigned(plant_start.first_sprite_ind) << "}" << std::endl;
-    std::cout << "MED: {" << unsigned(med_start.first_palette_ind) << ","
-                        << unsigned(med_start.first_tile_ind) << ","
-                        << unsigned(med_start.first_sprite_ind) << "}" << std::endl;
-                        assert(sprite_ind <= 64);
+    // std::cout << "SHRIMP: {" << unsigned(shrimp_start.first_palette_ind) << ","
+    //                     << unsigned(shrimp_start.first_tile_ind) << ","
+    //                     << unsigned(shrimp_start.first_sprite_ind) << "}" << std::endl;
+    // std::cout << "PLANT: {" << unsigned(plant_start.first_palette_ind) << ","
+    //                     << unsigned(plant_start.first_tile_ind) << ","
+    //                     << unsigned(plant_start.first_sprite_ind) << "}" << std::endl;
+    // std::cout << "MED: {" << unsigned(med_start.first_palette_ind) << ","
+    //                     << unsigned(med_start.first_tile_ind) << ","
+    //                     << unsigned(med_start.first_sprite_ind) << "}" << std::endl;
+
+    assert(sprite_ind <= 64);
 }
 
 ShrimpMode::~ShrimpMode() {
@@ -430,23 +439,20 @@ void ShrimpMode::update(float elapsed) {
 
     how_pink = ShrimpMode::Pinkness(std::max(score - 1, 0)  / 2);
 
-    // // Set visibility only for the current shade of flamingo
+    // Set visibility only for the current shade of flamingo
     // std::cout << "how pink? " << how_pink << std::endl;
-    // for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
-    //     uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
-    //     SpriteInfo sprite_info = sprite_infos[big_sprite_i];
-    //     if (flam_i == how_pink) {
-    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
-    //             ppu.sprites[sprite_info.sprite_index + s].attributes = sprite_info.palette_index;
-    //         }
-    //     }
-    //     else {
-    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
-                
-    //             ppu.sprites[sprite_info.sprite_index + s].attributes = 0;
-    //         }
-    //     }
-    // }
+    for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
+        uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
+        SpriteInfo sprite_info = sprite_infos[big_sprite_i];
+        if (flam_i == how_pink) {
+            // std::cout << "*** flamingo " << flam_i << " VISIBLE " << std::endl;
+            sprite_info.consumed = false;
+        }
+        else {
+            // std::cout << "*** flamingo " << flam_i << " HIDDEN " << std::endl;
+            sprite_info.consumed = true;
+        }
+    }
 }
 
 void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
@@ -456,9 +462,7 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
 
 	//--- set ppu state based on game state ---
 
-    // Draw directly with the x,y saved into sprite
-    // Remaining sprites
-    // uint32_t sprite_i;
+    // ---- Render all other sprites first
     uint32_t sprite_i, big_sprite_i;
     for (big_sprite_i = shrimp_start.first_sprite_ind; big_sprite_i < flamingo_start.first_sprite_ind; big_sprite_i++) {
         SpriteInfo sprite_info = sprite_infos[big_sprite_i];
@@ -472,50 +476,53 @@ void ShrimpMode::draw(glm::uvec2 const &drawable_size) {
         }
     }
 
-    // // Set visibility only for the current shade of flamingo
-    // std::cout << "how pink? " << how_pink << std::endl;
+    // ----- Flamingo (rendered last so it'll draw on top)
+    uint32_t row_offset, col_offset;
+    for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
+        SpriteInfo flam_info = sprite_infos[flamingo_start.first_sprite_ind + flam_i];
+        assert(flam_info.type == Flamingo);
+        if (flam_i == how_pink) {
+            // std::cout << "Drawing flamingo " << flam_i << std::endl;
+            for (int32_t r = 0; r < sprite_tile_dim; r++) {
+                for (int32_t c = 0; c < sprite_tile_dim; c++) {
+                    sprite_i = flam_info.sprite_index + (r * sprite_tile_dim) + c;
+                    assert(sprite_i >= 48);
+                    row_offset = r * 8; // offset for y
+                    col_offset = c * 8; // offset for x
+                    ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
+                    ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
+                    ppu.sprites[sprite_i].index = flam_info.start_tile_index + (r * sprite_tile_dim) + c;
+                    ppu.sprites[sprite_i].attributes = flam_info.palette_index;
+                }
+            }
+        }
+    }
+
+
     // for (uint32_t flam_i = 0; flam_i < 4; flam_i++) {
     //     uint32_t big_sprite_i = flamingo_start.first_sprite_ind + flam_i;
     //     SpriteInfo sprite_info = sprite_infos[big_sprite_i];
     //     if (flam_i == how_pink) {
-    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
-    //             ppu.sprites[sprite_info.sprite_index + s].attributes = sprite_info.palette_index;
+    //         for (int32_t r = 0; r < sprite_tile_dim; r++) {
+    //             for (int32_t c = 0; c < sprite_tile_dim; c++) {
+    //                 sprite_i = (flamingo_info.sprite_index + how_pink) + (r * sprite_tile_dim) + c;
+    //                 row_offset = r * 8; // offset for y
+    //                 col_offset = c * 8; // offset for x
+    //                 ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
+    //                 ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
+    //                 ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + (how_pink * 4) + (r * sprite_tile_dim) + c;
+    //                 ppu.sprites[sprite_i].attributes = flamingo_info.palette_index + how_pink;
+    //             }
     //         }
     //     }
     //     else {
-    //         for (int32_t s = 0; s < sprites_per_sprite; s++) {
-                
-    //             ppu.sprites[sprite_info.sprite_index + s].attributes = 0;
+    //         for (int32_t r = 0; r < sprite_tile_dim; r++) {
+    //             for (int32_t c = 0; c < sprite_tile_dim; c++) {
+    //                 // "Hide" sprite if consumed, by changing its color palette
+    //                 sprite_i = (flamingo_info.sprite_index + how_pink) + (r * sprite_tile_dim) + c;
+    //                 ppu.sprites[sprite_i].attributes = 0;
+    //             }
     //         }
-    //     }
-    // }
-
-
-
-    // ----- Flamingo (rendered last so it'll draw on top)
-    SpriteInfo flamingo_info = sprite_infos[flamingo_start.first_sprite_ind];
-
-    uint32_t row_offset, col_offset;
-
-    for (int32_t r = 0; r < sprite_tile_dim; r++) {
-        for (int32_t c = 0; c < sprite_tile_dim; c++) {
-            sprite_i = (flamingo_info.sprite_index) + (r * sprite_tile_dim) + c;//(flamingo_info.sprite_index + how_pink) + (r * sprite_tile_dim) + c;
-            row_offset = r * 8; // offset for y
-            col_offset = c * 8; // offset for x
-            ppu.sprites[sprite_i].x = int32_t(player_at.x) + col_offset;
-            ppu.sprites[sprite_i].y = int32_t(player_at.y) + row_offset;
-            ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + (r * sprite_tile_dim) + c;//flamingo_info.start_tile_index + sprite_i;
-            ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
-        }
-    }
-
-    // for (int32_t r = 0; r < sprite_tile_dim; r++) {
-    //     for (int32_t c = 0; c < sprite_tile_dim; c++) {
-    //         sprite_i = (flamingo_info.sprite_index + 1) + (r * sprite_tile_dim) + c;
-    //         ppu.sprites[sprite_i].x = 0;
-    //         ppu.sprites[sprite_i].y = 0;
-    //         ppu.sprites[sprite_i].index = flamingo_info.start_tile_index + 4 + (r * sprite_tile_dim) + c;//flamingo_info.start_tile_index + sprite_i;
-    //         ppu.sprites[sprite_i].attributes = flamingo_info.palette_index;
     //     }
     // }
 
