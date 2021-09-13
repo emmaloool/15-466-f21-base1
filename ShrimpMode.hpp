@@ -75,6 +75,8 @@ struct ShrimpMode : Mode {
     Pinkness how_pink = NoPink;
 
     const uint8_t other_sprites_start = 1;
+    const uint8_t plant_start = 9;
+    const uint8_t med_start = 14;
 
 	PPU466 ppu;
 };

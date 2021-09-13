@@ -387,6 +387,14 @@ void ShrimpMode::update(float elapsed) {
             // Avoid..? TODO handle later
         }
         else if (sinfo.type == Medicine) {
+            // Already eaten 
+            if (!sinfo.consumed) {
+                for (uint8_t s = other_sprites_start; s < plant_start; s++) {
+                    SpriteInfo &shrimp_info = sprite_infos[s];
+                    shrimp_info.consumed = false;
+                }
+                score = 0;
+            }
 
         }
             // TODO: Could also just break after handling a single sprite, since they're not going to overlap
